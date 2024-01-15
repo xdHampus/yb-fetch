@@ -30,6 +30,10 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Authenticate with npm
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+
+
       - name: Publish to npm
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
