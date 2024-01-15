@@ -1,5 +1,5 @@
 # yb-fetch
-This is a library for fetching data from YellowBridge.com for Chinese character and word data.
+This is a library for fetching Chinese dictionary, character and word data from the YellowBridge website.
 Library was written in TypeScript and depends on `axios` and `cheerio`.
 
 ## Installatio

@@ -2,7 +2,7 @@
   "name": "yb-fetch",
   "version": "0.0.1",
   "type": "module",
-  "description": "A library to fetch data from the YellowBridge Chinese Dictionary and Character information site",
+  "description": "A library to fetch Chinese dictionary and character data from the YellowBridge website",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist", "LICENSE", "README.md", "package.json"], 
