@@ -1,0 +1,18 @@
+# Ignore IDE files & other local files
+.idea
+.vscode
+.vs
+*.log
+.DS_Store
+Thumbs.db
+
+# Package manager
+node_modules/
+
+# Ignore build files
+*.js
+dist/
+build/
+dist/
+out/
+target/

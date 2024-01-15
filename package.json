@@ -1,0 +1,24 @@
+{
+  "name": "yb-fetch",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "A library to fetch data from the YellowBridge Chinese Dictionary and Character information site",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "LICENSE", "README.md", "package.json"], 
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "prepublish": "npm run build"
+  },
+  "keywords": ["library", "fetch", "scrape", "mandarin", "chinese"],
+  "author": "xdHampus",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.5",
+    "cheerio": "1.0.0-rc.12"
+  }
+}
