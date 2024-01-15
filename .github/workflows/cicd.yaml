@@ -5,7 +5,7 @@ on:
     branches:
       - master
     tags:
-      - 'v*'
+      - 'v*.*.*'
 env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -15,10 +15,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 21
 
@@ -31,29 +33,85 @@ jobs:
         run: npm run build
 
       - name: Authenticate with npm
+        if: startsWith(github.ref, 'refs/tags/v')
         run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
 
-
-      - name: Publish to npm
+      - name: Dry run publish
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           npm publish --dry-run
-          npm publish
-          echo "Published to npm"
 
-      - name: Create GitHub release
+      - name: Get the version tag
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            Changes in this release:
-            ${{ steps.generate_changelog.outputs.changelog }}
-          draft: false
-          prerelease: false
-
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $github_ref_tag| sed 's|refs/tags/||')
+        env:
+          github_ref_tag: ${{ github.ref }}
+      
       - name: Generate changelog
+        if: startsWith(github.ref, 'refs/tags/v')
         id: generate_changelog
         run: |
-          echo "::set-output name=changelog::$(git log --pretty=format:'- %s' | grep -E 'feat:|fix:|perf:|refactor:')"
+          commit_identifiers='feat:|fix:|perf:|refactor:'
+          echo "Getting commit hash"
+          commit_hash="$(git rev-list -n 1 $new_version_tag^ 2>/dev/null || echo $(git rev-list --max-parents=0 HEAD))"
+          echo "Determining if commit hash is a tag"
+          input_log=""
+          if [[ "$commit_hash" != "tags/v"* ]]; then
+            echo "Commit hash is not a tag"
+            input_log="$(git log --pretty=format:'- %s [%h](https://github.com/xdHampus/yb-fetch/commit/%H)' --root $new_version_tag | grep -E $commit_identifiers)"
+            echo "Got commits"
+            echo $input_log
+          else
+            echo "Commit hash is a tag"
+            input_log="$(git log --pretty=format:'- %s [%h](https://github.com/xdHampus/yb-fetch/commit/%H)' '$commit_hash'..$new_version_tag | grep -E $commit_identifiers)"
+            echo "Got commits"
+            echo $input_log
+          fi
+
+          declare -A category_mapping
+          category_mapping["feat"]="Features"
+          category_mapping["fix"]="Bug Fixes"
+          category_mapping["perf"]="Performance Improvements"
+          category_mapping["refactor"]="Code Refactoring"
+          categories=("feat" "fix" "perf" "refactor")
+
+          declare -A category_items
+
+          while IFS= read -r line; do
+              for category in "${categories[@]}"; do
+                  if [[ $line == *"$category:"* ]]; then
+                      item=$(echo "$line" | sed "s/- $category: //")
+                      echo "Adding item $item to category $category"
+                      category_items["$category"]+="- $item"
+                  fi
+              done
+          done <<< "$input_log"
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "CHANGELOG<<$EOF" >> $GITHUB_OUTPUT
+          for category in "${categories[@]}"; do
+              if [ -n "${category_items["$category"]}" ]; then
+                  echo "Adding category $category"
+                  echo "## ${category_mapping["$category"]}" >> $GITHUB_OUTPUT
+                  echo "${category_items["$category"]}" >> $GITHUB_OUTPUT
+              fi
+          done
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+
+        env:
+          new_version_tag: ${{ steps.get_version.outputs.VERSION }}
+        
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ steps.get_version.outputs.VERSION}} 
+          body: |
+            Changes in this release:
+            ${{ steps.generate_changelog.outputs.CHANGELOG }}
+          draft: false 
+          prerelease: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, 'rc')
+          token: ${{ secrets.CUSTOM_GH_TOKEN }}
+

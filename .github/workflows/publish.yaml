@@ -1,0 +1,72 @@
+name: Publish package to GitHub Packages
+on:
+  release:
+    types: [published]
+
+
+jobs:
+  publish-github:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '21.x'
+          registry-url: https://npm.pkg.github.com/
+          always-auth: true
+          token: ${{ secrets.CUSTOM_GH_TOKEN }}
+
+      - name: Configure npmrc
+        run: | 
+          echo "//npm.pkg.github.com/:_authToken=${PKG_REPO_TOKEN}" > ~/.npmrc
+          echo "@xdhampus:registry=https://npm.pkg.github.com" >> ~/.npmrc
+        env:
+          PKG_REPO_TOKEN: ${{ secrets.PKG_REPO_TOKEN }}
+
+      - name: Cat npmrc
+        run: cat ~/.npmrc
+
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Publish to GitHub Packages
+        run: |
+          echo "$(jq '.publishConfig.registry = "https://npm.pkg.github.com"' package.json)" > package.json
+          echo "$(jq '.name = "@xdhampus/yb-fetch"' package.json)" > package.json
+          npm publish --@xdhampus:registry=https://npm.pkg.github.com --access public
+
+        #Run once it fails
+      - name: Print npm debug logs
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug*.log
+  publish-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '21.x'
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Authenticate with npm
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        run: |
+          npm publish
