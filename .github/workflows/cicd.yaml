@@ -51,4 +51,4 @@ jobs:
       - name: Generate changelog
         id: generate_changelog
         run: |
-          echo "::set-output name=changelog::$(git log --pretty=format:'- %s' | grep -E 'feat:|fix:|perf:|refactor:|revert:|docs:|chore:|ci:|test:||wip:')"
+          echo "::set-output name=changelog::$(git log --pretty=format:'- %s' | grep -E 'feat:|fix:|perf:|refactor:')"
