@@ -64,7 +64,7 @@ jobs:
             echo $input_log
           else
             echo "Commit hash is a tag"
-            input_log="$(git log --pretty=format:'- %s [%h](https://github.com/xdHampus/yb-fetch/commit/%H)' '$commit_hash'..$new_version_tag | grep -E $commit_identifiers)"
+            input_log="$(git log --pretty=format:'- %s [%h](https://github.com/xdHampus/yb-fetch/commit/%H)' "$commit_hash"..$new_version_tag | grep -E $commit_identifiers)"
             echo "Got commits"
             echo $input_log
           fi
